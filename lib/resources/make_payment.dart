@@ -1,7 +1,13 @@
 
+import 'package:abshia/providers/authentication_provider.dart';
+import 'package:abshia/resources/routes_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_paystack/flutter_paystack.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
+import '../app/hive_impl/hive_models/offline_enrollee_data.dart';
+import '../constants/constants.dart';
+import '../providers/helper_provider.dart';
 import 'constanst.dart';
 
 
@@ -12,16 +18,22 @@ class MakePayment {
         required this.email,
         required this.ref,
         this.token,
-        this.account,});
+        this.account,
+      required this.helperProvider,
+      required this.authenticationProvider,
+      required this.offlineEnrolleeData,
+      required this.isfromOffline});
 
   BuildContext ctx;
-
   int price;
-
   String email;
   String ref;
   String? token;
   String? account;
+  HelperProvider helperProvider;
+  final AuthenticationProvider authenticationProvider;
+  final OfflineEnrolleeData offlineEnrolleeData;
+  final bool isfromOffline;
 
 
   PaystackPlugin paystack = PaystackPlugin();
@@ -53,19 +65,23 @@ class MakePayment {
             width: 50,
             decoration: const BoxDecoration(
                 image: DecorationImage(
-                    image: NetworkImage(
-                        "https://firebasestorage.googleapis.com/v0/b/a-1-plus-16517.appspot.com/o/logo.png?alt=media&token=fe2c3c62-95d5-46d4-8f96-4fd91080092f"))),
+                    image: NetworkImage(logoUrl))),
           ));
-      // if (response.status == true) {
-      //   isCharged = true;
-      //   if (isAddCard) {
-      //     boldVtuProvider!.saveCard(context, ref, token!, userId, false);
-      //   } else {
-      //   }
-      //   // print("Full Response: $response");
-      // } else {
-      //   // print("Transaction failed: $response");
-      // }
+      if (response.status == true) {
+        final enrolled =  await helperProvider.enrollUser(context, offlineEnrolleeData, authenticationProvider.userData.token!, authenticationProvider.userData.user!.details!.code!);
+        if(enrolled){
+          print("Enrolled!");
+          await authenticationProvider.getAgentProfile(context);
+
+          if(isfromOffline){
+            Hive.box<OfflineEnrolleeData>(offlineEnrollee)
+                .delete(offlineEnrolleeData.id);
+          }
+          Navigator.pushNamed(context, Routes.paymentSuccessful);
+        }
+      } else {
+        // print("Transaction failed: $response");
+      }
     });
 
     return isCharged;

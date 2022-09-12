@@ -12,4 +12,5 @@ class Endpoints {
   static const enrolleeSignup = "sign-up";
   static const agentProfile = "user-profile";
   static const updateProfile = "update-signup-details";
+  static const plans = "plans";
 }

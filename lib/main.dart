@@ -11,6 +11,7 @@ import 'app/app.dart';
 import 'app/hive_impl/hive_models/offline_enrollee_data.dart';
 import 'constants/constants.dart';
 import 'providers/helper_provider.dart';
+import 'providers/sub_plans_provider.dart';
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +33,8 @@ void main() async{
       ChangeNotifierProvider(create: (_) => AuthenticationProvider()),
       ChangeNotifierProvider(create: (_) => HelperProvider(),),
       ChangeNotifierProvider(create: (_) => OfflineEnrollmentProvider()),
+      ChangeNotifierProvider(create: (_) => SubPlanProvider()),
+
     ],
     child: const MyApp(),
   ));

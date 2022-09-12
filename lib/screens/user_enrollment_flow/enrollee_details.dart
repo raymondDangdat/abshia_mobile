@@ -1,10 +1,12 @@
 import 'package:abshia/app/hive_impl/hive_models/offline_enrollee_data.dart';
+import 'package:abshia/providers/sub_plans_provider.dart';
 import 'package:abshia/screens/select_plan/select_sub_plan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
+import '../../providers/authentication_provider.dart';
 import '../../providers/offline_data_provider.dart';
 import '../../resources/color_manager.dart';
 import '../../resources/font_manager.dart';
@@ -43,6 +45,7 @@ class _EnrolleeDetailsState extends State<EnrolleeDetails> {
 
   @override
   Widget build(BuildContext context) {
+    var auth = Provider.of<AuthenticationProvider>(context, listen: true);
     return Scaffold(
       body: SafeArea(
           child: Column(
@@ -137,7 +140,9 @@ class _EnrolleeDetailsState extends State<EnrolleeDetails> {
               ) : Container(),
 
               SizedBox(height: AppSize.s14.h,),
-              customElevatedButton(context, (){
+              customElevatedButton(context, ()async{
+                print("Token: ${auth.userData.token}");
+                // context.read<SubPlanProvider>().getSubscriptionPlan(context, auth.userData.token);
                 Navigator.push(context, MaterialPageRoute(builder: (context) => SelectSubPlan(offlineEnrolleeData: _offlineEnrolleeData, isfromOffline: isOffline,)));
               }, AppStrings.submit,
                   ColorManager.primaryColor,
