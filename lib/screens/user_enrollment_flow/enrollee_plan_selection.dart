@@ -9,13 +9,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
+import 'package:random_string/random_string.dart';
 import 'package:top_snackbar_flutter/custom_snack_bar.dart';
 import 'package:top_snackbar_flutter/top_snack_bar.dart';
 import '../../app/hive_impl/hive_models/offline_enrollee_data.dart';
-import '../../models/premium_model.dart';
-import '../../models/sub_plans.dart';
+import '../../models/plans_model.dart';
+import '../../providers/sub_plans_provider.dart';
+import '../../resources/constanst.dart';
 import '../../resources/image_manager.dart';
-import '../../resources/routes_manager.dart';
+import '../../resources/make_payment.dart';
 import '../../resources/value_manager.dart';
 import '../../widgets/custom_text.dart';
 
@@ -32,9 +34,23 @@ class _EnrolleePlanSelectionState extends State<EnrolleePlanSelection> {
   String? selectedPlan;
   String? selectedPremium;
 
+  SubscriptionPlan? selectedSubPlan;
+
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      final auth = Provider.of<AuthenticationProvider>(context, listen: false);
+      final subPlanProvider = Provider.of<SubPlanProvider>(context, listen: false);
+      subPlanProvider.getSubscriptionPlan(context, auth.enrolleeUser.token!);
+    });
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     var auth = Provider.of<AuthenticationProvider>(context, listen: true);
+    var subPlanProvider = Provider.of<SubPlanProvider>(context, listen: true);
+
     return Scaffold(
       body: SafeArea(
           child: SingleChildScrollView(
@@ -88,24 +104,24 @@ class _EnrolleePlanSelectionState extends State<EnrolleePlanSelection> {
                                       child: requiredHint(AppStrings.planTypeLabel)),
                                 ],
                               ),
-                              items: subPlans
+                              items: subPlanProvider.plans
                                   .map((item) =>
-                                  DropdownMenuItem<String>(
+                                  DropdownMenuItem<SubscriptionPlan>(
                                       value: item,
                                       child: Row(
                                         mainAxisAlignment:
                                         MainAxisAlignment
                                             .spaceBetween,
                                         children: [
-                                          CustomText(text: item),
+                                          CustomText(text: item.title),
                                         ],
                                       )))
                                   .toList(),
-                              value: selectedPlan,
+                              value: selectedSubPlan,
                               onChanged: (value) {
 
-                                selectedPlan =
-                                value as String;
+                                selectedSubPlan =
+                                value as SubscriptionPlan ;
 
                                 setState(() {
 
@@ -144,100 +160,53 @@ class _EnrolleePlanSelectionState extends State<EnrolleePlanSelection> {
 
                 SizedBox(height: AppSize.s12.h,),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                          height: AppSize.s48.h,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                              color: ColorManager.cardColor,
-                              borderRadius: BorderRadius.circular(AppSize.s4.r),
-                              border: Border.all(
-                                  color: ColorManager.inputBorderColor)),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton2(
-                              focusColor: ColorManager.primaryColor,
-                              isExpanded: true,
-                              hint: Row(
-                                // ignore: prefer_const_literals_to_create_immutables
-                                children: [
-                                  Expanded(
-                                      child: requiredHint(AppStrings.premium)),
-                                ],
-                              ),
-                              items: premiums
-                                  .map((item) =>
-                                  DropdownMenuItem<String>(
-                                      value: item,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                        MainAxisAlignment
-                                            .spaceBetween,
-                                        children: [
-                                          CustomText(text: item),
-                                        ],
-                                      )))
-                                  .toList(),
-                              value: selectedPremium,
-                              onChanged: (value) {
-
-                                selectedPremium =
-                                value as String;
-
-                                setState(() {
-
-                                });
-                              },
-                              icon: SvgPicture.asset(AppImages.dropdownIcon),
-                              iconSize: 14,
-                              buttonHeight: 50,
-                              buttonPadding:
-                              const EdgeInsets.only(left: 14, right: 14),
-                              buttonDecoration: BoxDecoration(
-                                borderRadius:
-                                BorderRadius.circular(AppSize.s6.r),
-                                border: Border.all(
-                                  color: Colors.black26,
-                                ),
+                if(selectedSubPlan != null)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                            height: AppSize.s48.h,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
                                 color: ColorManager.whiteColor,
-                              ),
-                              itemHeight: 40,
-                              dropdownPadding: null,
-                              dropdownDecoration: BoxDecoration(
-                                borderRadius:
-                                BorderRadius.circular(AppSize.s4.r),
-                              ),
-                              dropdownElevation: 8,
-                              selectedItemHighlightColor:
-                              ColorManager.backButtonColor,
-                              scrollbarAlwaysShow: false,
-                              offset: const Offset(0, 0),
-                            ),
-                          )
+                                borderRadius: BorderRadius.circular(AppSize.s4.r),
+                                border: Border.all(
+                                    color: ColorManager.inputBorderColor)),
+                            child: Row(
+                              children: [
+                                SizedBox(width: AppSize.s8.w,),
+                                CustomText(text: selectedSubPlan!.duration),
+                              ],
+                            )
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
 
                 SizedBox(height: AppSize.s90.h,),
 
-                Row(
-                  children: [
-                    SizedBox(
-                        height: AppSize.s24.h,
-                        child: CustomTextWithLineHeight(text: AppStrings.totalAmount)),
-                  ],
-                ),
+                if(selectedSubPlan != null)
+                  Column(
+                    children: [
+                      Row(
+                        children: [
+                          SizedBox(
+                              height: AppSize.s24.h,
+                              child: CustomTextWithLineHeight(text: AppStrings.totalAmount)),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          SizedBox(
+                            //   height: AppSize.s48.h,
+                            child: CustomTextWithLineHeight(text: "N${moneyFormat.format(selectedSubPlan!.cost)}", textColor: ColorManager.primaryColor, fontWeight: FontWeightManager.bold, fontSize: FontSize.s36,),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
 
-                Row(
-                  children: [
-                    SizedBox(
-                      //   height: AppSize.s48.h,
-                      child: CustomTextWithLineHeight(text: "N100,000,000", textColor: ColorManager.primaryColor, fontWeight: FontWeightManager.bold, fontSize: FontSize.s36,),
-                    ),
-                  ],
-                ),
+
 
                 SizedBox(
                   height: AppSize.s173.h,
@@ -259,21 +228,29 @@ class _EnrolleePlanSelectionState extends State<EnrolleePlanSelection> {
                         }
                       });
                       return customElevatedButton(context, ()async{
-                        //
-                        final enrolled =  await helper.updateEnrollmentDetail(context, widget.offlineEnrolleeData, auth.enrolleeUser.token!, "");
 
-                        if(enrolled){
-                          print("Enrolled!");
-                          await auth.getAgentProfile(context);
-                          Navigator.pushNamed(context, Routes.enrolleePaymentSuccessful);
+                        if(selectedSubPlan != null){
+                          final ref = randomAlphaNumeric(10);
+                          print("ref: $ref");
+                          //
+
+
+                          MakePayment(
+                              ctx: ctx,
+                              email: widget.offlineEnrolleeData.email!,
+                              ref: ref,
+                              helperProvider: helper,
+                              authenticationProvider: auth,
+                              offlineEnrolleeData: widget.offlineEnrolleeData,
+                              isfromOffline: false,
+                              isSelfEnrollee: true,
+                              selectedSubPlan: selectedSubPlan!
+                          ).chargeCardAndMakePayment(context);
                         }
 
-
-
-
                       }, AppStrings.proceedToPayment,
-                        selectedPremium == null || selectedPlan == null? ColorManager.disabledButtonColor : ColorManager.primaryColor,
-                        selectedPremium == null || selectedPlan == null? ColorManager.disabledButtonTextColor : ColorManager.whiteColor,);
+                        selectedSubPlan == null? ColorManager.disabledButtonColor : ColorManager.primaryColor,
+                        selectedSubPlan == null? ColorManager.disabledButtonTextColor : ColorManager.whiteColor,);
                     }
                 ),
 
@@ -284,5 +261,251 @@ class _EnrolleePlanSelectionState extends State<EnrolleePlanSelection> {
             ),
           )),
     );
+    //   Scaffold(
+    //   body: SafeArea(
+    //       child: SingleChildScrollView(
+    //         padding: EdgeInsets.symmetric(horizontal: AppSize.s25.r),
+    //         child: Column(
+    //           children: [
+    //             SizedBox(height: AppSize.s32.h,),
+    //             SizedBox(
+    //               child: Row(
+    //                 children: [
+    //                   InkWell(
+    //                       onTap: (){
+    //                         Navigator.pop(context);
+    //                       },
+    //                       child: SvgPicture.asset(AppImages.backButton)),
+    //
+    //                   SizedBox(width: AppSize.s16.w,),
+    //
+    //                   SizedBox(height: AppSize.s25.h,
+    //                     child: CustomTextWithLineHeight(text: AppStrings.plan, fontSize: FontSize.s21, lineHeight: 1.2, textColor: ColorManager.primaryColor, fontWeight: FontWeightManager.bold,),)
+    //                 ],
+    //               ),),
+    //
+    //             SizedBox(height: AppSize.s25.h,),
+    //             Row(
+    //               children: [
+    //                 CustomTextWithLineHeight(text: AppStrings.kindleSelect, fontSize: FontSize.s21, fontWeight: FontWeightManager.bold, textColor: ColorManager.blackTextColor,),
+    //               ],
+    //             ),
+    //
+    //             SizedBox(height: AppSize.s18,),
+    //             Row(
+    //               children: [
+    //                 Expanded(
+    //                   child: Container(
+    //                       height: AppSize.s48.h,
+    //                       width: double.infinity,
+    //                       decoration: BoxDecoration(
+    //                           color: ColorManager.cardColor,
+    //                           borderRadius: BorderRadius.circular(AppSize.s4.r),
+    //                           border: Border.all(
+    //                               color: ColorManager.inputBorderColor)),
+    //                       child: DropdownButtonHideUnderline(
+    //                         child: DropdownButton2(
+    //                           focusColor: ColorManager.primaryColor,
+    //                           isExpanded: true,
+    //                           hint: Row(
+    //                             // ignore: prefer_const_literals_to_create_immutables
+    //                             children: [
+    //                               Expanded(
+    //                                   child: requiredHint(AppStrings.planTypeLabel)),
+    //                             ],
+    //                           ),
+    //                           items: subPlans
+    //                               .map((item) =>
+    //                               DropdownMenuItem<String>(
+    //                                   value: item,
+    //                                   child: Row(
+    //                                     mainAxisAlignment:
+    //                                     MainAxisAlignment
+    //                                         .spaceBetween,
+    //                                     children: [
+    //                                       CustomText(text: item),
+    //                                     ],
+    //                                   )))
+    //                               .toList(),
+    //                           value: selectedPlan,
+    //                           onChanged: (value) {
+    //
+    //                             selectedPlan =
+    //                             value as String;
+    //
+    //                             setState(() {
+    //
+    //                             });
+    //                           },
+    //                           icon: SvgPicture.asset(AppImages.dropdownIcon),
+    //                           iconSize: 14,
+    //                           buttonHeight: 50,
+    //                           buttonPadding:
+    //                           const EdgeInsets.only(left: 14, right: 14),
+    //                           buttonDecoration: BoxDecoration(
+    //                             borderRadius:
+    //                             BorderRadius.circular(AppSize.s6.r),
+    //                             border: Border.all(
+    //                               color: Colors.black26,
+    //                             ),
+    //                             color: ColorManager.whiteColor,
+    //                           ),
+    //                           itemHeight: 40,
+    //                           dropdownPadding: null,
+    //                           dropdownDecoration: BoxDecoration(
+    //                             borderRadius:
+    //                             BorderRadius.circular(AppSize.s4.r),
+    //                           ),
+    //                           dropdownElevation: 8,
+    //                           selectedItemHighlightColor:
+    //                           ColorManager.backButtonColor,
+    //                           scrollbarAlwaysShow: false,
+    //                           offset: const Offset(0, 0),
+    //                         ),
+    //                       )
+    //                   ),
+    //                 ),
+    //               ],
+    //             ),
+    //
+    //             SizedBox(height: AppSize.s12.h,),
+    //
+    //             Row(
+    //               children: [
+    //                 Expanded(
+    //                   child: Container(
+    //                       height: AppSize.s48.h,
+    //                       width: double.infinity,
+    //                       decoration: BoxDecoration(
+    //                           color: ColorManager.cardColor,
+    //                           borderRadius: BorderRadius.circular(AppSize.s4.r),
+    //                           border: Border.all(
+    //                               color: ColorManager.inputBorderColor)),
+    //                       child: DropdownButtonHideUnderline(
+    //                         child: DropdownButton2(
+    //                           focusColor: ColorManager.primaryColor,
+    //                           isExpanded: true,
+    //                           hint: Row(
+    //                             // ignore: prefer_const_literals_to_create_immutables
+    //                             children: [
+    //                               Expanded(
+    //                                   child: requiredHint(AppStrings.premium)),
+    //                             ],
+    //                           ),
+    //                           items: premiums
+    //                               .map((item) =>
+    //                               DropdownMenuItem<String>(
+    //                                   value: item,
+    //                                   child: Row(
+    //                                     mainAxisAlignment:
+    //                                     MainAxisAlignment
+    //                                         .spaceBetween,
+    //                                     children: [
+    //                                       CustomText(text: item),
+    //                                     ],
+    //                                   )))
+    //                               .toList(),
+    //                           value: selectedPremium,
+    //                           onChanged: (value) {
+    //
+    //                             selectedPremium =
+    //                             value as String;
+    //
+    //                             setState(() {
+    //
+    //                             });
+    //                           },
+    //                           icon: SvgPicture.asset(AppImages.dropdownIcon),
+    //                           iconSize: 14,
+    //                           buttonHeight: 50,
+    //                           buttonPadding:
+    //                           const EdgeInsets.only(left: 14, right: 14),
+    //                           buttonDecoration: BoxDecoration(
+    //                             borderRadius:
+    //                             BorderRadius.circular(AppSize.s6.r),
+    //                             border: Border.all(
+    //                               color: Colors.black26,
+    //                             ),
+    //                             color: ColorManager.whiteColor,
+    //                           ),
+    //                           itemHeight: 40,
+    //                           dropdownPadding: null,
+    //                           dropdownDecoration: BoxDecoration(
+    //                             borderRadius:
+    //                             BorderRadius.circular(AppSize.s4.r),
+    //                           ),
+    //                           dropdownElevation: 8,
+    //                           selectedItemHighlightColor:
+    //                           ColorManager.backButtonColor,
+    //                           scrollbarAlwaysShow: false,
+    //                           offset: const Offset(0, 0),
+    //                         ),
+    //                       )
+    //                   ),
+    //                 ),
+    //               ],
+    //             ),
+    //
+    //             SizedBox(height: AppSize.s90.h,),
+    //
+    //             Row(
+    //               children: [
+    //                 SizedBox(
+    //                     height: AppSize.s24.h,
+    //                     child: CustomTextWithLineHeight(text: AppStrings.totalAmount)),
+    //               ],
+    //             ),
+    //
+    //             Row(
+    //               children: [
+    //                 SizedBox(
+    //                   //   height: AppSize.s48.h,
+    //                   child: CustomTextWithLineHeight(text: "N100,000,000", textColor: ColorManager.primaryColor, fontWeight: FontWeightManager.bold, fontSize: FontSize.s36,),
+    //                 ),
+    //               ],
+    //             ),
+    //
+    //             SizedBox(
+    //               height: AppSize.s173.h,
+    //             ),
+    //             Consumer<HelperProvider>(
+    //                 builder: (ctx, helper, child) {
+    //                   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //                     if (helper.resMessage != '') {
+    //                       showTopSnackBar(
+    //                         context,
+    //                         CustomSnackBar.info(
+    //                           message: helper.resMessage
+    //                           ,
+    //                         ),
+    //                       );
+    //
+    //                       ///Clear the response message to avoid duplicate
+    //                       helper.clear();
+    //                     }
+    //                   });
+    //                   return customElevatedButton(context, ()async{
+    //                     //
+    //                     final enrolled =  await helper.updateEnrollmentDetail(context, widget.offlineEnrolleeData, auth.enrolleeUser.token!, "");
+    //
+    //                     if(enrolled){
+    //                       print("Enrolled!");
+    //                       await auth.getAgentProfile(context);
+    //                       Navigator.pushNamed(context, Routes.enrolleePaymentSuccessful);
+    //                     }
+    //
+    //                   }, AppStrings.proceedToPayment,
+    //                     selectedPremium == null || selectedPlan == null? ColorManager.disabledButtonColor : ColorManager.primaryColor,
+    //                     selectedPremium == null || selectedPlan == null? ColorManager.disabledButtonTextColor : ColorManager.whiteColor,);
+    //                 }
+    //             ),
+    //
+    //
+    //
+    //
+    //           ],
+    //         ),
+    //       )),
+    // );
   }
 }

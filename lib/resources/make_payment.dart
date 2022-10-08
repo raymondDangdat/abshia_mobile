@@ -7,6 +7,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../app/hive_impl/hive_models/offline_enrollee_data.dart';
 import '../constants/constants.dart';
+import '../models/plans_model.dart';
 import '../providers/helper_provider.dart';
 import 'constanst.dart';
 
@@ -14,18 +15,18 @@ import 'constanst.dart';
 class MakePayment {
   MakePayment(
       {required this.ctx,
-        required this.price,
         required this.email,
         required this.ref,
         this.token,
         this.account,
+        this.isSelfEnrollee = false,
       required this.helperProvider,
       required this.authenticationProvider,
       required this.offlineEnrolleeData,
-      required this.isfromOffline});
+      required this.isfromOffline,
+      required this.selectedSubPlan});
 
   BuildContext ctx;
-  int price;
   String email;
   String ref;
   String? token;
@@ -34,6 +35,8 @@ class MakePayment {
   final AuthenticationProvider authenticationProvider;
   final OfflineEnrolleeData offlineEnrolleeData;
   final bool isfromOffline;
+  final SubscriptionPlan selectedSubPlan;
+  final isSelfEnrollee;
 
 
   PaystackPlugin paystack = PaystackPlugin();
@@ -52,7 +55,7 @@ class MakePayment {
     bool isCharged = false;
     initializePlugin().then((_) async {
       Charge charge = Charge()
-        ..amount = price * 100
+        ..amount = selectedSubPlan.cost * 100
         ..email = email
         ..reference = ref
         ..card = _getCardUI();
@@ -68,17 +71,30 @@ class MakePayment {
                     image: NetworkImage(logoUrl))),
           ));
       if (response.status == true) {
-        final enrolled =  await helperProvider.enrollUser(context, offlineEnrolleeData, authenticationProvider.userData.token!, authenticationProvider.userData.user!.details!.code!);
-        if(enrolled){
-          print("Enrolled!");
-          await authenticationProvider.getAgentProfile(context);
-
-          if(isfromOffline){
-            Hive.box<OfflineEnrolleeData>(offlineEnrollee)
-                .delete(offlineEnrolleeData.id);
+        if(isSelfEnrollee){
+          final enrolled =  await helperProvider.updateEnrollmentDetail(context, offlineEnrolleeData, authenticationProvider.enrolleeUser.token!, "",
+              selectedSubPlan);
+          if(enrolled){
+            Navigator.pushNamed(context, Routes.enrolleePaymentSuccessful);
           }
-          Navigator.pushNamed(context, Routes.paymentSuccessful);
+        }else{
+          final enrolled =  await helperProvider.enrollUser(
+              context, offlineEnrolleeData, authenticationProvider.userData.token!,
+              authenticationProvider.userData.user!.details!.code!,
+              selectedSubPlan
+          );
+          if(enrolled){
+            print("Enrolled!");
+            await authenticationProvider.getAgentProfile(context);
+
+            if(isfromOffline){
+              Hive.box<OfflineEnrolleeData>(offlineEnrollee)
+                  .delete(offlineEnrolleeData.id);
+            }
+            Navigator.pushNamed(context, Routes.paymentSuccessful);
+          }
         }
+
       } else {
         // print("Transaction failed: $response");
       }

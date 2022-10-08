@@ -1,6 +1,4 @@
 import 'package:abshia/app/hive_impl/hive_models/offline_enrollee_data.dart';
-import 'package:abshia/resources/routes_manager.dart';
-import 'package:abshia/screens/user_enrollment_flow/enrollee_plan_selection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
@@ -11,6 +9,7 @@ import '../../../resources/strings_manager.dart';
 import '../../../resources/value_manager.dart';
 import '../../../widgets/custom_text.dart';
 import '../../../widgets/reusable_widget.dart';
+import '../../user_enrollment_flow/enrollee_plan_selection.dart';
 
 
 
@@ -121,6 +120,7 @@ class _EnrollmentDetailsState extends State<EnrollmentDetails> {
 
               SizedBox(height: AppSize.s14.h,),
               customElevatedButton(context, (){
+                // Navigator.push(context, MaterialPageRoute(builder: (context) => SelectSubPlan(offlineEnrolleeData: _offlineEnrolleeData, isfromOffline: isOffline,)));
                 Navigator.push(context, MaterialPageRoute(builder: (context) => EnrolleePlanSelection(offlineEnrolleeData: _offlineEnrolleeData)));
               }, AppStrings.submit,
                   ColorManager.primaryColor,

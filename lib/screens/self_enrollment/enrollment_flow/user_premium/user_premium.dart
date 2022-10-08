@@ -6,6 +6,8 @@ import 'package:abshia/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+import '../../../../providers/authentication_provider.dart';
 import '../../../../resources/value_manager.dart';
 
 
@@ -17,9 +19,10 @@ class UserPremium extends StatefulWidget {
 }
 
 class _UserPremiumState extends State<UserPremium> {
+
   @override
   Widget build(BuildContext context) {
-
+    var auth = Provider.of<AuthenticationProvider>(context, listen: true);
     return Scaffold(
       body: SafeArea(child: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: AppSize.s25.w),

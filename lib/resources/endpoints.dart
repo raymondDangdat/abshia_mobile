@@ -13,4 +13,5 @@ class Endpoints {
   static const agentProfile = "user-profile";
   static const updateProfile = "update-signup-details";
   static const plans = "plans";
+  static const makePayment = "make-payment";
 }

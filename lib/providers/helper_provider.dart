@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../app/hive_impl/hive_models/offline_enrollee_data.dart';
+import '../models/enrolled_user_model.dart';
 import '../models/enrollee_data_model.dart';
+import '../models/plans_model.dart';
 import '../resources/endpoints.dart';
 import '../resources/routes_manager.dart';
 import '../widgets/loading.dart';
@@ -18,6 +20,8 @@ class HelperProvider extends DisposableProvider {
 
   bool _isLoading = false;
   String _resMessage = '';
+
+  EnrolledUserModel? _enrolledUserData;
 
 
   //Getter
@@ -82,6 +86,7 @@ class HelperProvider extends DisposableProvider {
       BuildContext context,
       OfflineEnrolleeData offlineEnrolleeData,
       String token, String agentCode,
+      SubscriptionPlan selectedSubPlan,
       ) async {
     bool enrolled = false;
     String _url = "$baseURL${Endpoints.enrollUser}";
@@ -131,14 +136,22 @@ class HelperProvider extends DisposableProvider {
             'Content-Type': 'application/json',
           },
           body: json.encode(body));
-      // print("Response Body: ${response.body} Status code: ${response.statusCode}");
+      print("Response Body: ${response.body} Status code: ${response.statusCode}");
       if (response.statusCode == 200 || response.statusCode == 201) {
         _isLoading = false;
         _resMessage = "";
-        enrolled = true;
-        Navigator.pop(context);
-        // Navigator.pushNamed(context, Routes.paymentSuccessful);
+        _enrolledUserData = enrolledUserModelFromJson(response.body);
+
+        final paymentUpdated =  await updatePayment(context, selectedSubPlan, token);
+        if(paymentUpdated){
+          enrolled = true;
+        }else{
+          _resMessage = "Could not update Payment";
+        }
         notifyListeners();
+        Navigator.pop(context);
+        Navigator.pushNamed(context, Routes.paymentSuccessful);
+
       } else if (response.statusCode == 403) {
         _isLoading = false;
         _resMessage = "Session Expired, login";
@@ -166,6 +179,7 @@ class HelperProvider extends DisposableProvider {
       BuildContext context,
       OfflineEnrolleeData offlineEnrolleeData,
       String token, String agentCode,
+      SubscriptionPlan selectedSubPlan,
       ) async {
     bool enrolled = false;
     String _url = "$baseURL${Endpoints.updateProfile}";
@@ -215,14 +229,23 @@ class HelperProvider extends DisposableProvider {
             'Content-Type': 'application/json',
           },
           body: json.encode(body));
-      // print("Response Body: ${response.body} Status code: ${response.statusCode}");
+      print("Response Body: ${response.body} Status code: ${response.statusCode}");
       if (response.statusCode == 200 || response.statusCode == 201) {
         _isLoading = false;
         _resMessage = "";
-        enrolled = true;
-        Navigator.pop(context);
+        // enrolled = true;
+        // Navigator.pop(context);
         // Navigator.pushNamed(context, Routes.paymentSuccessful);
+        _enrolledUserData = enrolledUserModelFromJson(response.body);
+        final paymentUpdated =  await updatePayment(context, selectedSubPlan, token);
+        if(paymentUpdated){
+          enrolled = true;
+        }else{
+          _resMessage = "Could not update Payment";
+        }
         notifyListeners();
+        Navigator.pop(context);
+        Navigator.pushNamed(context, Routes.enrolleePaymentSuccessful);
       } else if (response.statusCode == 403) {
         _isLoading = false;
         _resMessage = "Session Expired, login";
@@ -296,6 +319,62 @@ class HelperProvider extends DisposableProvider {
     }
 
     return enrolled;
+  }
+
+  Future<bool> updatePayment(
+      BuildContext context,
+      SubscriptionPlan selectedSubPlan,
+      String token) async {
+    String _url = "$baseURL${Endpoints.makePayment}";
+    _isLoading = true;
+    bool paymentUpdated = false;
+    showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (BuildContext context) => const LoadingIndicator());
+    notifyListeners();
+
+    final body =
+    {
+      "emp_id" : "${_enrolledUserData?.data!.id}",
+      "plan_id" : selectedSubPlan.id,
+      "type" : "monthly sub",
+      "amount" : selectedSubPlan.cost,
+      "description" : "${selectedSubPlan.description}"
+    };
+
+    print("Payload: $body");
+
+    try {
+      final request = await http.post(Uri.parse(_url),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: json.encode(body));
+      print("Make Payment Response Body: ${request.body}");
+      if (request.statusCode == 200 || request.statusCode == 201) {
+        _isLoading = false;
+        _resMessage = "";
+        paymentUpdated = true;
+        Navigator.pop(context);
+        notifyListeners();
+      } else {
+        _isLoading = false;
+        _resMessage = json.decode(request.body)['message'];
+        print("The message here: $_resMessage");
+        notifyListeners();
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      // print("Error: ${e.toString()}");
+      _isLoading = false;
+
+      notifyListeners();
+      Navigator.pop(context);
+    }
+
+    return paymentUpdated;
   }
 
 
