@@ -237,13 +237,13 @@ class _SelectSubPlanState extends State<SelectSubPlan> {
 
                         MakePayment(
                           ctx: ctx,
-                          price: selectedSubPlan!.cost,
                           email: widget.offlineEnrolleeData.email!,
                           ref: ref,
                           helperProvider: helper,
                           authenticationProvider: auth,
                           offlineEnrolleeData: widget.offlineEnrolleeData,
-                          isfromOffline: widget.isfromOffline
+                          isfromOffline: widget.isfromOffline,
+                          selectedSubPlan: selectedSubPlan!
                         ).chargeCardAndMakePayment(context);
                       }
 

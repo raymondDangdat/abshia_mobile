@@ -8,7 +8,9 @@ import 'package:abshia/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
+import '../../../../providers/authentication_provider.dart';
 import '../../../../resources/value_manager.dart';
 
 
@@ -17,16 +19,15 @@ class UserHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var auth = Provider.of<AuthenticationProvider>(context, listen: true);
     return Scaffold(
       backgroundColor: ColorManager.whiteColor,
       appBar: PreferredSize(child: const AbshiaUserAppBar(), preferredSize: Size.fromHeight(AppSize.s50.h),),
-
       body: SafeArea(child: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: AppSize.s25.w),
         child: Column(
           children: [
             SizedBox(height: AppSize.s28.h,),
-
             Container(
                 padding: EdgeInsets.symmetric(
                   horizontal: AppSize.s30.w,
@@ -56,7 +57,8 @@ class UserHomeScreen extends StatelessWidget {
                           width: AppSize.s208.w,
                             child: CustomTextWithLineHeight(
                               isCenterAligned: false,
-                              text: AppStrings.individualHealth, fontSize: FontSize.s16, textColor: ColorManager.whiteColor, fontWeight: FontWeightManager.bold,)),
+                              text: auth.enrolleeUser.user?.details?.relationships?.plan == null ? "Not Subscribed yet" :
+                              auth.enrolleeUser.user?.details?.relationships?.plan?.title, fontSize: FontSize.s16, textColor: ColorManager.whiteColor, fontWeight: FontWeightManager.bold,)),
                       ],
                     ),
 
@@ -75,7 +77,7 @@ class UserHomeScreen extends StatelessWidget {
                           Expanded(
                             child: CustomTextWithLineHeight(
                               isCenterAligned: false,
-                              text: AppStrings.status, fontSize: FontSize.s12, textColor: ColorManager.faintWhite, fontWeight: FontWeightManager.regular,),
+                              text:  AppStrings.status, fontSize: FontSize.s12, textColor: ColorManager.faintWhite, fontWeight: FontWeightManager.regular,),
                           ),
                         ],
                       ),
@@ -89,13 +91,14 @@ class UserHomeScreen extends StatelessWidget {
                           Expanded(
                             child: CustomTextWithLineHeight(
                               isCenterAligned: false,
-                              text: AppStrings.oneYear, fontSize: FontSize.s12, textColor: ColorManager.faintWhite, fontWeight: FontWeightManager.regular,),
+                              text: auth.enrolleeUser.user?.details?.relationships?.plan == null ? "Nil" :
+                              auth.enrolleeUser.user?.details?.relationships?.plan?.duration, fontSize: FontSize.s12, textColor: ColorManager.faintWhite, fontWeight: FontWeightManager.regular,),
                           ),
 
                           Expanded(
                             child: CustomTextWithLineHeight(
                               isCenterAligned: false,
-                              text: AppStrings.active, fontSize: FontSize.s12, textColor: ColorManager.lightGreen, fontWeight: FontWeightManager.regular,),
+                              text: auth.enrolleeUser.user?.details?.relationships?.plan == null ? "Nil" : AppStrings.active, fontSize: FontSize.s12, textColor: ColorManager.lightGreen, fontWeight: FontWeightManager.regular,),
                           ),
                         ],
                       ),

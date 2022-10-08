@@ -1,5 +1,4 @@
 import 'package:abshia/app/hive_impl/hive_models/offline_enrollee_data.dart';
-import 'package:abshia/providers/sub_plans_provider.dart';
 import 'package:abshia/screens/select_plan/select_sub_plan.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';

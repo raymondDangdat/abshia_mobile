@@ -435,6 +435,10 @@ class _PersonalDetailsState extends State<PersonalDetails> {
                       ],
                     ),
 
+                    SizedBox(height: AppSize.s40.h,),
+
+                    
+
                     if(selectedState != null && !helperProvider.isLoading)
                       SizedBox(height: AppSize.s12.h,),
                     if(selectedState != null && !helperProvider.isLoading)
